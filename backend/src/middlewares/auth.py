@@ -11,9 +11,15 @@ def current_user(token: HTTPAuthorizationCredentials | None = Depends(bearer), d
         return user
     except Exception:
         raise HTTPException(401, '登录已过期，请重新登录')
-def can_write(user=Depends(current_user)):
+def internal_user(user=Depends(current_user)):
+    if user.role == 'vendor': raise HTTPException(403, '外协账号仅可访问分配的复核包')
+    return user
+def vendor_user(user=Depends(current_user)):
+    if user.role != 'vendor': raise HTTPException(403, '仅外协账号可执行该操作')
+    return user
+def can_write(user=Depends(internal_user)):
     if user.role not in ('admin','analyst'): raise HTTPException(403, '观察员只有读取权限')
     return user
-def admin_only(user=Depends(current_user)):
+def admin_only(user=Depends(internal_user)):
     if user.role != 'admin': raise HTTPException(403, '需要业务负责人批准')
     return user
